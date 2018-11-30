@@ -7,9 +7,9 @@
 import sys
 import pygame
 from pygame.locals import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QSlider, QSizePolicy, QApplication
+from PyQt5.QtCore import QTimer, Qt
 from AxesWidget import AxesWidget
 from ButtonWidget import ButtonWidget
 # import serial
@@ -44,11 +44,13 @@ class ControllerTester(QWidget):
         # By default, load the first available joystick.
         if len(self.joystick_list) > 0:
             self.connect_to_controller(0)
+        else:
+            print("No controllers found")
 
-        self.__timer_init = QTimer()
-        self.__timer_init.timeout.connect(self.poll_controller)
-        self.__timer_init.setSingleShot(False)
-        self.__timer_init.start(10)
+        self.run_timer = QTimer()
+        self.run_timer.timeout.connect(self.poll_controller)
+        self.run_timer.setSingleShot(False)
+        self.run_timer.start(10)
 
         self.button_array = []
         self.axes_sliders_array = []
@@ -56,21 +58,23 @@ class ControllerTester(QWidget):
         self.hat_array = []
         self.control_layout = None
         self.main_layout = QVBoxLayout()
-        self.initUI()
+        self.init_ui()
 
     def update_numbered_list_of_controllers(self):
         # Enumerate joysticks
         self.joystick_list.clear()
         for i in range(0, pygame.joystick.get_count()):
             self.joystick_list.append((i, pygame.joystick.Joystick(i).get_name()))
-        print(self.joystick_list)
+        if len(self.joystick_list):
+            for num, name in self.joystick_list:
+                print(num, ":", name)
 
-    def initUI(self):
+    def init_ui(self):
         hbox_cont_select = QHBoxLayout()
         cb_controllers = QComboBox()
         for item in self.joystick_list:
             cb_controllers.addItem(item[1])
-            hbox_cont_select.addWidget(cb_controllers)
+        hbox_cont_select.addWidget(cb_controllers)
         cb_controllers.currentIndexChanged.connect(self.selection_change)
 
         # Add main layout
@@ -93,7 +97,6 @@ class ControllerTester(QWidget):
             if self.num_axes >= 1:
                 # Layout for axes display
                 vbox_axes_sliders = QVBoxLayout()
-                vbox_axes_sliders.addStretch(1)
                 label_axes = QLabel(self)
                 label_axes.setText('Axes')
                 vbox_axes_sliders.addWidget(label_axes)
@@ -119,6 +122,7 @@ class ControllerTester(QWidget):
                     vbox_axes_sliders.addWidget(label)
                     vbox_axes_sliders.addWidget(slider)
 
+                    # Add X/Y Axis box
                     self.axes_widget_array.append(AxesWidget())
 
                     vbox = QVBoxLayout()
@@ -129,7 +133,11 @@ class ControllerTester(QWidget):
                     vbox.addWidget(axes_label)
                     self.axes_sliders_array[-2].valueChanged[int].connect(self.axes_widget_array[-1].set_x_value)
                     self.axes_sliders_array[-1].valueChanged[int].connect(self.axes_widget_array[-1].set_y_value)
-                    vbox.addWidget(self.axes_widget_array[-1])
+                    haxis = QHBoxLayout()
+                    haxis.addStretch(1)
+                    haxis.addWidget(self.axes_widget_array[-1])
+                    haxis.addStretch(1)
+                    vbox.addLayout(haxis)
                     hbox_axes_plot.addLayout(vbox)
 
                     axis_num += 1
@@ -167,14 +175,13 @@ class ControllerTester(QWidget):
                 hbox_label = QHBoxLayout()
                 hbox_label.addWidget(label_buttons)
                 hbox_buttons = QHBoxLayout()
-                hbox_buttons.addStretch(1)
                 for i in range(0, self.num_buttons):
                     cb = ButtonWidget(str(i))
                     self.button_array.append(cb)
                     # cb.setEnabled(False)
                     cb.setState(False)
                     hbox_buttons.addWidget(cb)
-
+                hbox_buttons.addStretch(1)
                 controller_vbox_layout.addLayout(hbox_label)
                 controller_vbox_layout.addLayout(hbox_buttons)
 
@@ -243,9 +250,9 @@ class ControllerTester(QWidget):
                     print(values)
 
     def quit(self):
-        if self.my_joystick.get_init():
+        if self.my_joystick and self.my_joystick.get_init():
             self.my_joystick.quit()
-        self.__timer_init.stop()
+        self.run_timer.stop()
         pygame.quit()
 
     # Overrides
@@ -296,6 +303,7 @@ class ControllerTester(QWidget):
                 print("Invalid index specified:", index)
         except Exception:
             print("Exception while connecting to controller", index)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
