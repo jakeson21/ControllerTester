@@ -1,45 +1,28 @@
-
 # http://zetcode.com/gui/pyqt5/
-# http://zetcode.com/gui/pyqt5/layout/
-
-# Requires: pygame, pyserial, pyqt5
-
 import sys
 import pygame
 from pygame.locals import *
-
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QSlider, QSizePolicy, QApplication
 from PyQt5.QtCore import QTimer, Qt
 from AxesWidget import AxesWidget
 from ButtonWidget import ButtonWidget
-# import serial
-# from serial.tools.list_ports import comports
 
 
 class ControllerTester(QWidget):
     def __init__(self):
         super().__init__()
-        pygame.init()
 
-        # Set up the joystick
-        pygame.joystick.init()
-
+        # Declare parameters
         self.my_joystick = None
         self.joystick_list = []
         self.num_axes = 0
         self.num_buttons = 0
         self.num_hats = 0
 
-        self.g_keys = None
-
-        # self.ser = serial.Serial()
-        # self.ser.baudrate = 9600
-        # self.ser.port = 'COM3'
-        # # Get list of available ports
-        # ports = comports()
-        # for p in ports:
-        #     print(p)
-
+        # pygame startup
+        pygame.init()
+        # Set up the joystick
+        pygame.joystick.init()
         self.update_numbered_list_of_controllers()
         # By default, load the first available joystick.
         if len(self.joystick_list) > 0:
@@ -47,17 +30,21 @@ class ControllerTester(QWidget):
         else:
             print("No controllers found")
 
+        # Declare controller polling timer
         self.run_timer = QTimer()
         self.run_timer.timeout.connect(self.poll_controller)
         self.run_timer.setSingleShot(False)
         self.run_timer.start(10)
 
+        # Declare gui handle arrays used to track objects
         self.button_array = []
         self.axes_sliders_array = []
         self.axes_widget_array = []
         self.hat_array = []
         self.control_layout = None
         self.main_layout = QVBoxLayout()
+
+        # Creates ui
         self.init_ui()
 
     def update_numbered_list_of_controllers(self):
@@ -70,6 +57,7 @@ class ControllerTester(QWidget):
                 print(num, ":", name)
 
     def init_ui(self):
+        # Controller selection combo box. Only lists currently connected controllers.
         hbox_cont_select = QHBoxLayout()
         cb_controllers = QComboBox()
         for item in self.joystick_list:
@@ -77,10 +65,9 @@ class ControllerTester(QWidget):
         hbox_cont_select.addWidget(cb_controllers)
         cb_controllers.currentIndexChanged.connect(self.selection_change)
 
-        # Add main layout
         # Add Controller ComboBox
         self.main_layout.addLayout(hbox_cont_select)
-        # self.setGeometry(300, 300, 300, 150)
+        # Add main_layout to top level widget
         self.setLayout(self.main_layout)
         # Qt show window
         self.show()
